@@ -5,6 +5,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Trade Journal</title>
+<script>
+  // Set the theme attribute before first paint so there's no flash of the
+  // wrong theme while the rest of the page loads.
+  (function () {
+    var t = 'dark';
+    try { t = localStorage.getItem('tj_theme') || 'dark'; } catch (e) {}
+    document.documentElement.setAttribute('data-theme', t === 'light' ? 'light' : 'dark');
+  })();
+</script>
 <style>
   :root {
     --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -20,6 +29,10 @@
     --text-dim: #8a8a8a;
     --text-bright: #ffffff;
     --hover-bg: rgba(255,255,255,0.06);
+    --hover-strong: #48484b;
+    --hover-elevated: #33333a;
+    --scrollbar-thumb: #4a4a4a;
+    --scrollbar-thumb-hover: #5c5c5c;
 
     --accent: #0e8fd9;
     --accent-hover: #1ba1ec;
@@ -37,7 +50,43 @@
     --radius-sm: 5px;
   }
 
+  /* ---------- Light theme ----------
+     Applied via [data-theme="light"] on <html>, toggled by the sun/moon
+     button (see #themeToggleBtn / toggleTheme()). Every color in the app is
+     drawn from these tokens, so this one block is the whole light palette —
+     nothing else needs to change per-theme. */
+  :root[data-theme="light"] {
+    --bg: #ffffff;
+    --bg-panel: #f3f3f3;
+    --bg-elevated: #ececec;
+    --bg-input: #ffffff;
+    --border: #c9c9c9;
+    --border-soft: rgba(30,30,30,0.15);
+    --text: #3a3a3a;
+    --text-dim: #6b6b6b;
+    --text-bright: #1a1a1a;
+    --hover-bg: rgba(0,0,0,0.045);
+    --hover-strong: #e2e2e4;
+    --hover-elevated: #e2e2e4;
+    --scrollbar-thumb: #c6c6c6;
+    --scrollbar-thumb-hover: #a8a8a8;
+
+    --accent: #0b6bb3;
+    --accent-hover: #085792;
+    --accent-soft: rgba(11,107,179,0.12);
+
+    --profit: #0a8a5c;
+    --profit-soft: rgba(10,138,92,0.12);
+    --loss: #c62d2d;
+    --loss-soft: rgba(198,45,45,0.12);
+    --gold: #9c6b00;
+    --gold-soft: rgba(156,107,0,0.12);
+
+    --shadow: rgba(30,30,30,0.16);
+  }
+
   html { color-scheme: dark; }
+  html[data-theme="light"] { color-scheme: light; }
   * { box-sizing: border-box; }
   body {
     margin: 0;
@@ -45,13 +94,20 @@
     color: var(--text);
     font-family: var(--font-ui);
     min-height: 100vh;
+    transition: background-color .15s ease, color .15s ease;
   }
   ::selection { background: rgba(14,143,217,0.35); }
   ::-webkit-scrollbar { width: 11px; height: 11px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: #4a4a4a; border-radius: 6px; border: 3px solid var(--bg); }
-  ::-webkit-scrollbar-thumb:hover { background: #5c5c5c; }
+  ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 6px; border: 3px solid var(--bg); }
+  ::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
   ::-webkit-scrollbar-corner { background: var(--bg); }
+
+  /* ---------- Theme toggle button ---------- */
+  .theme-toggle-btn { margin-left: auto; align-self: center; background: transparent; border: 1px solid var(--border-soft); color: var(--text-dim); width: 30px; height: 30px; border-radius: 6px; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; transition: background .12s ease, color .12s ease, border-color .12s ease; }
+  .theme-toggle-btn:hover { background: var(--hover-bg); color: var(--text-bright); border-color: var(--accent-soft); }
+  .auth-theme-toggle { position: absolute; top: 16px; right: 16px; }
+  .auth-card { position: relative; }
 
   /* ---------- Top tab bar ---------- */
   .tabs-header { background: var(--bg-panel); border-bottom: 1px solid var(--border-soft); }
@@ -132,7 +188,7 @@
   .btn:hover { background: var(--accent-hover); }
   .btn:disabled { opacity: 0.45; cursor: not-allowed; }
   .btn-secondary { background: var(--bg-input); color: var(--text); }
-  .btn-secondary:hover { background: #48484b; }
+  .btn-secondary:hover { background: var(--hover-strong); }
   .btn-ghost { background: transparent; border: 1px solid var(--border-soft); color: var(--text-dim); padding: 7px 13px; border-radius: var(--radius-sm); font-size: 12.5px; font-weight: 700; cursor: pointer; font-family: var(--font-ui); }
   .btn-ghost:hover { color: var(--text-bright); border-color: var(--border); }
   .search-box input { background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); padding: 7px 10px; font-size: 12px; font-family: var(--font-ui); outline: none; width: 170px; }
@@ -364,7 +420,7 @@
   .tc-sec:last-child { border-bottom: none; }
 
   .tc-sec-header { cursor: pointer; padding: 10px 12px 11px; background: var(--bg-elevated); border-bottom: 1px solid var(--border-soft); transition: background .12s ease; }
-  .tc-sec-header:hover { background: #33333a; }
+  .tc-sec-header:hover { background: var(--hover-elevated); }
   .tc-header-top { display: flex; align-items: center; gap: 7px; }
   .ledger-stripe-mini { width: 3px; align-self: stretch; border-radius: 2px; flex: 0 0 auto; }
   .ledger-stripe-mini.dir-long { background: var(--profit); }
@@ -450,7 +506,7 @@
   .two-col-card:hover { border-color: var(--accent-soft); box-shadow: 0 1px 3px var(--shadow), 0 0 0 1px var(--accent-soft); }
   .tcol-left { flex: 0 0 44%; min-width: 0; display: flex; flex-direction: column; border-right: 1px solid var(--border-soft); }
   .tcol-header { display: flex; align-items: center; gap: 7px; padding: 10px 12px; cursor: pointer; background: var(--bg-elevated); border-bottom: 1px solid var(--border-soft); transition: background .12s ease; }
-  .tcol-header:hover { background: #33333a; }
+  .tcol-header:hover { background: var(--hover-elevated); }
   .tcol-chart { flex: 1; min-height: 160px; background: var(--bg-elevated); }
   .tcol-chart .rail-chart, .tcol-chart img { width: 100%; height: 100%; }
   .tcol-right { flex: 1; min-width: 0; display: flex; flex-direction: column; padding: 12px 14px; gap: 10px; }
@@ -484,7 +540,7 @@
   .tabbed-card { font-family: var(--font-mono); cursor: pointer; transition: box-shadow .12s ease, border-color .12s ease; }
   .tabbed-card:hover { border-color: var(--accent-soft); box-shadow: 0 1px 3px var(--shadow), 0 0 0 1px var(--accent-soft); }
   .tab-header { display: flex; align-items: center; gap: 7px; padding: 10px 12px; cursor: pointer; background: var(--bg-elevated); border-bottom: 1px solid var(--border-soft); transition: background .12s ease; }
-  .tab-header:hover { background: #33333a; }
+  .tab-header:hover { background: var(--hover-elevated); }
   .tab-date-row { padding: 6px 12px 0; font-size: 10.5px; color: var(--text-dim); }
   .tab-bar { display: flex; gap: 4px; padding: 8px 12px 0; }
   .tab-btn { flex: 1; background: var(--bg-input); border: 1px solid var(--border-soft); color: var(--text-dim); font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; padding: 6px 4px; cursor: pointer; border-radius: 4px; font-family: var(--font-ui); }
@@ -627,7 +683,7 @@
   .calendar-header h3 { margin: 0; font-size: 12.5px; color: var(--text-bright); font-weight: 700; }
   .cal-nav { display: flex; align-items: center; gap: 10px; }
   .cal-nav-btn { background: var(--bg-input); border: none; color: var(--text); width: 26px; height: 26px; border-radius: 4px; cursor: pointer; font-size: 14px; }
-  .cal-nav-btn:hover { background: #48484b; }
+  .cal-nav-btn:hover { background: var(--hover-strong); }
   .cal-month-label { font-family: var(--font-mono); font-size: 12.5px; color: var(--text-bright); min-width: 120px; text-align: center; }
   .calendar-body-row { display: flex; gap: 14px; align-items: flex-start; }
   .calendar-grid-col { flex: 1 1 0; min-width: 0; }
@@ -766,6 +822,7 @@
 <!-- ============================= Auth screen (login / register) ============================= -->
 <div class="auth-screen" id="authScreen" hidden>
   <div class="auth-card">
+    <button type="button" class="theme-toggle-btn auth-theme-toggle" id="authThemeToggleBtn" onclick="toggleTheme()" title="Switch theme" aria-label="Switch between light and dark theme"></button>
     <h1 class="auth-title">Trade Journal</h1>
     <p class="auth-sub">Sign in with your PIN to sync your trades.</p>
 
@@ -830,6 +887,7 @@
   <div class="tab-link active" id="tabLinkTrades" data-tab="trades-pane" onclick="switchTab('trades-pane', this)">Trades</div>
   <div class="tab-link" id="tabLinkPerf" data-tab="performance-pane" onclick="switchTab('performance-pane', this)">Performance</div>
   <div class="tab-link" id="tabLinkSettings" data-tab="settings-pane" onclick="switchTab('settings-pane', this)">Settings</div>
+  <button type="button" class="theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme()" title="Switch theme" aria-label="Switch between light and dark theme"></button>
 </div></div>
 
 <div class="page">
@@ -4629,8 +4687,36 @@ function bindStaticEvents() {
   });
 }
 
+/* ============================= Theme (light/dark) ============================= */
+// The <head> has an inline script that already stamped data-theme onto <html>
+// before first paint (see top of file) so there's no flash on load; this just
+// keeps the toggle buttons' icon/label in sync and handles switching it.
+function applyTheme(theme) {
+  const t = theme === 'light' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', t);
+  const icon = t === 'light' ? '☀️' : '\u{1F319}'; // sun (light mode active) / moon (dark mode active)
+  const label = t === 'light' ? 'Switch to dark theme' : 'Switch to light theme';
+  ['themeToggleBtn', 'authThemeToggleBtn'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    btn.textContent = icon;
+    btn.title = label;
+    btn.setAttribute('aria-label', label);
+  });
+  try { localStorage.setItem('tj_theme', t); } catch (e) {}
+}
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+  applyTheme(current === 'light' ? 'dark' : 'light');
+}
+function initThemeButtons() {
+  const current = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+  applyTheme(current);
+}
+
 /* ============================= Init ============================= */
 function init() {
+  initThemeButtons();
   bindStaticEvents();
   setDateFieldValue('fDate', todayIso());
   setDateFieldValue('fTxnDate', todayIso());
